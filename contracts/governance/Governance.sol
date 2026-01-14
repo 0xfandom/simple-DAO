@@ -86,4 +86,12 @@ contract Governance {
     ) public view returns (Proposal memory proposal) {
         proposal = proposals[proposalId];
     }
+
+    function quorumVotes(uint256 proposalId) public view returns (uint256) {
+        Proposal storage p = proposals[proposalId];
+
+        uint256 totalSupply = token.getPastTotalSupply(p.snapshotBlock);
+
+        return (totalSupply * quorumBps) / 10_000;
+    }
 }
