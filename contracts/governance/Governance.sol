@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "../token/DAOToken.sol";
+import {DAOToken} from "../token/DAOToken.sol";
+import {DAOTimelock} from "./Timelock.sol";
 
 contract Governance {
     struct Proposal {
@@ -23,11 +24,13 @@ contract Governance {
 
     uint256 public constant VOTING_PERIOD = 5 days;
     uint256 public quorumBps; // e.g. 1000 = 10%
+    DAOTimelock public timelock;
 
-    constructor(address _token, uint256 _quorumBps) {
+    constructor(address _token, uint256 _quorumBps, DAOTimelock _timelock) {
         require(_quorumBps > 0 && _quorumBps <= 10_000, "invalid quorum");
         token = DAOToken(_token);
         quorumBps = _quorumBps;
+        timelock = _timelock;
     }
 
     function propose(
