@@ -55,7 +55,8 @@ contract Governance {
         require(block.number <= p.endBlock, "voting ended");
         require(!hasVoted[proposalId][msg.sender], "already voted");
 
-        uint256 votes = token.balanceOf(msg.sender);
+        uint256 votes = token.getPastVotes(msg.sender, p.snapshotBlock);
+
         require(votes > 0, "no votes");
 
         hasVoted[proposalId][msg.sender] = true;
@@ -65,24 +66,21 @@ contract Governance {
     }
 
     function executeProposal(uint256 proposalId) external {
-    Proposal storage p = proposals[proposalId];
+        Proposal storage p = proposals[proposalId];
 
-    require(!p.executed, "already executed");
-    require(block.number > p.endBlock, "voting not ended");
-    require(p.forVotes > p.againstVotes, "proposal failed");
+        require(!p.executed, "already executed");
+        require(block.number > p.endBlock, "voting not ended");
+        require(p.forVotes > p.againstVotes, "proposal failed");
 
-    p.executed = true;
+        p.executed = true;
 
-    (bool ok, ) = p.target.call{value: p.value}(p.data);
-    require(ok, "execution failed");
-}
+        (bool ok, ) = p.target.call{value: p.value}(p.data);
+        require(ok, "execution failed");
+    }
 
-
-    function getProposal(uint256 proposalId)
-        public
-        view
-        returns (Proposal memory proposal)
-    {
-       proposal = proposals[proposalId];
+    function getProposal(
+        uint256 proposalId
+    ) public view returns (Proposal memory proposal) {
+        proposal = proposals[proposalId];
     }
 }
