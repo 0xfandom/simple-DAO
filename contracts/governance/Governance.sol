@@ -21,11 +21,14 @@ contract Governance {
   mapping(uint256 => Proposal) private proposals;
   mapping(uint256 => mapping(address => bool)) public hasVoted;
 
-  uint256 public constant VOTING_PERIOD = 5 days;
+    uint256 public constant VOTING_PERIOD = 5 days;
+    uint256 public quorumBps; // e.g. 1000 = 10%
 
-  constructor(address _token) {
-    token = DAOToken(_token);
-  }
+    constructor(address _token, uint256 _quorumBps) {
+        require(_quorumBps > 0 && _quorumBps <= 10_000, "invalid quorum");
+        token = DAOToken(_token);
+        quorumBps = _quorumBps;
+    }
 
   function propose(
     address target,
