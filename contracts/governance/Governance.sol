@@ -22,9 +22,12 @@ contract Governance {
     mapping(uint256 => mapping(address => bool)) public hasVoted;
 
     uint256 public constant VOTING_PERIOD = 5 days;
+    uint256 public quorumBps; // e.g. 1000 = 10%
 
-    constructor(address _token) {
+    constructor(address _token, uint256 _quorumBps) {
+        require(_quorumBps > 0 && _quorumBps <= 10_000, "invalid quorum");
         token = DAOToken(_token);
+        quorumBps = _quorumBps;
     }
 
     function propose(
@@ -82,5 +85,13 @@ contract Governance {
         uint256 proposalId
     ) public view returns (Proposal memory proposal) {
         proposal = proposals[proposalId];
+    }
+
+    function quorumVotes(uint256 proposalId) public view returns (uint256) {
+        Proposal storage p = proposals[proposalId];
+
+        uint256 totalSupply = token.getPastTotalSupply(p.snapshotBlock);
+
+        return (totalSupply * quorumBps) / 10_000;
     }
 }
