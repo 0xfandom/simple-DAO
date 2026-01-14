@@ -8,6 +8,7 @@ contract Governance {
         address target;
         uint256 value;
         bytes data;
+        uint256 snapshotBlock;
         uint256 startBlock;
         uint256 endBlock;
         bool executed;
@@ -38,6 +39,7 @@ contract Governance {
             target: target,
             value: value,
             data: data,
+            snapshotBlock: block.number - 1,
             startBlock: block.number,
             endBlock: block.number + 20000,
             executed: false,
