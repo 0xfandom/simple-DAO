@@ -37,6 +37,13 @@ contract Governance {
         uint256 snapshotBlock
     );
 
+    event VoteCast(
+        address indexed voter,
+        uint256 indexed proposalId,
+        bool support,
+        uint256 votes
+    );
+
     constructor(
         address _token,
         uint256 _quorumBps,
@@ -106,6 +113,8 @@ contract Governance {
 
         if (support) p.forVotes += votes;
         else p.againstVotes += votes;
+
+        emit VoteCast(msg.sender, proposalId, support, votes);
     }
 
     function executeProposal(uint256 proposalId) external {
