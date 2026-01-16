@@ -10,6 +10,8 @@ contract Executor {
 
     event ProposalExecuted(uint256 indexed proposalId);
 
+    event ProposalExecuted(uint256 indexed proposalId);
+
     constructor(address _gov) {
         governance = Governance(_gov);
     }
