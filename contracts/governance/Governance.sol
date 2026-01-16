@@ -74,7 +74,7 @@ contract Governance {
         uint256 thresholdVotes = (totalSupply * proposalThresholdBps) / 10_000;
 
         require(proposerVotes >= thresholdVotes, "proposal threshold not met");
-
+        
         proposalCount++;
         proposals[proposalCount] = Proposal({
             target: target,
