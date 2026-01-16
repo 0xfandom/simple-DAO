@@ -27,6 +27,16 @@ contract Governance {
     DAOTimelock public timelock;
     uint256 public proposalThresholdBps;
 
+    event ProposalCreated(
+        uint256 indexed proposalId,
+        address indexed proposer,
+        address indexed target,
+        uint256 value,
+        uint256 startBlock,
+        uint256 endBlock,
+        uint256 snapshotBlock
+    );
+
     constructor(
         address _token,
         uint256 _quorumBps,
@@ -69,6 +79,16 @@ contract Governance {
             forVotes: 0,
             againstVotes: 0
         });
+
+        emit ProposalCreated(
+            proposalCount,
+            msg.sender,
+            target,
+            value,
+            block.number,
+            block.number + 20000,
+            snapshotBlock
+        );
 
         return proposalCount;
     }
