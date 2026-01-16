@@ -28,6 +28,16 @@ contract Governance {
     DAOTimelock public timelock;
     uint256 public proposalThresholdBps;
 
+    event ProposalCreated(
+        uint256 indexed proposalId,
+        address indexed proposer,
+        address indexed target,
+        uint256 value,
+        uint256 startBlock,
+        uint256 endBlock,
+        uint256 snapshotBlock
+    );
+
     constructor(
         address _token,
         uint256 _quorumBps,
@@ -58,16 +68,6 @@ contract Governance {
 
         require(proposerVotes >= thresholdVotes, "proposal threshold not met");
 
-        uint256 snapshotBlock = block.number - 1;
-
-        uint256 proposerVotes = token.getPastVotes(msg.sender, snapshotBlock);
-
-        uint256 totalSupply = token.getPastTotalSupply(snapshotBlock);
-
-        uint256 thresholdVotes = (totalSupply * proposalThresholdBps) / 10_000;
-
-        require(proposerVotes >= thresholdVotes, "proposal threshold not met");
-
         proposalCount++;
         proposals[proposalCount] = Proposal({
             target: target,
@@ -82,8 +82,18 @@ contract Governance {
             againstVotes: 0
         });
 
-    return proposalCount;
-  }
+        emit ProposalCreated(
+            proposalCount,
+            msg.sender,
+            target,
+            value,
+            block.number,
+            block.number + 20000,
+            snapshotBlock
+        );
+
+        return proposalCount;
+    }
 
   function vote(uint256 proposalId, bool support) external {
     Proposal storage p = proposals[proposalId];
