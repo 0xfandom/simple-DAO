@@ -27,7 +27,12 @@ contract Governance {
     DAOTimelock public timelock;
     uint256 public proposalThresholdBps;
 
-    constructor(address _token, uint256 _quorumBps, DAOTimelock _timelock, uint256 _proposalThresholdBps) {
+    constructor(
+        address _token,
+        uint256 _quorumBps,
+        DAOTimelock _timelock,
+        uint256 _proposalThresholdBps
+    ) {
         require(_quorumBps > 0 && _quorumBps <= 10_000, "invalid quorum");
         token = DAOToken(_token);
         quorumBps = _quorumBps;
@@ -42,12 +47,22 @@ contract Governance {
     ) external returns (uint256) {
         require(token.balanceOf(msg.sender) > 0, "no voting power");
 
+        uint256 snapshotBlock = block.number - 1;
+
+        uint256 proposerVotes = token.getPastVotes(msg.sender, snapshotBlock);
+
+        uint256 totalSupply = token.getPastTotalSupply(snapshotBlock);
+
+        uint256 thresholdVotes = (totalSupply * proposalThresholdBps) / 10_000;
+
+        require(proposerVotes >= thresholdVotes, "proposal threshold not met");
+
         proposalCount++;
         proposals[proposalCount] = Proposal({
             target: target,
             value: value,
             data: data,
-            snapshotBlock: block.number - 1,
+            snapshotBlock: snapshotBlock,
             startBlock: block.number,
             endBlock: block.number + 20000,
             executed: false,
