@@ -58,6 +58,16 @@ contract Governance {
 
         require(proposerVotes >= thresholdVotes, "proposal threshold not met");
 
+        uint256 snapshotBlock = block.number - 1;
+
+        uint256 proposerVotes = token.getPastVotes(msg.sender, snapshotBlock);
+
+        uint256 totalSupply = token.getPastTotalSupply(snapshotBlock);
+
+        uint256 thresholdVotes = (totalSupply * proposalThresholdBps) / 10_000;
+
+        require(proposerVotes >= thresholdVotes, "proposal threshold not met");
+
         proposalCount++;
         proposals[proposalCount] = Proposal({
             target: target,
