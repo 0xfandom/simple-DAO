@@ -38,6 +38,13 @@ contract Governance {
         uint256 snapshotBlock
     );
 
+    event VoteCast(
+        address indexed voter,
+        uint256 indexed proposalId,
+        bool support,
+        uint256 votes
+    );
+
     constructor(
         address _token,
         uint256 _quorumBps,
@@ -106,9 +113,11 @@ contract Governance {
 
     hasVoted[proposalId][msg.sender] = true;
 
-    if (support) p.forVotes += votes;
-    else p.againstVotes += votes;
-  }
+        if (support) p.forVotes += votes;
+        else p.againstVotes += votes;
+
+        emit VoteCast(msg.sender, proposalId, support, votes);
+    }
 
   function queueProposal(uint256 proposalId) external {
     Proposal storage proposal = proposals[proposalId];
