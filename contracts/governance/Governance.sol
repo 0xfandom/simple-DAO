@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "../token/DAOToken.sol";
+import '../token/DAOToken.sol';
 
 contract Governance {
     struct Proposal {
@@ -16,23 +16,23 @@ contract Governance {
         uint256 againstVotes;
     }
 
-    DAOToken public token;
-    uint256 public proposalCount;
-    mapping(uint256 => Proposal) private proposals;
-    mapping(uint256 => mapping(address => bool)) public hasVoted;
+  DAOToken public token;
+  uint256 public proposalCount;
+  mapping(uint256 => Proposal) private proposals;
+  mapping(uint256 => mapping(address => bool)) public hasVoted;
 
-    uint256 public constant VOTING_PERIOD = 5 days;
+  uint256 public constant VOTING_PERIOD = 5 days;
 
-    constructor(address _token) {
-        token = DAOToken(_token);
-    }
+  constructor(address _token) {
+    token = DAOToken(_token);
+  }
 
-    function propose(
-        address target,
-        uint256 value,
-        bytes calldata data
-    ) external returns (uint256) {
-        require(token.balanceOf(msg.sender) > 0, "no voting power");
+  function propose(
+    address target,
+    uint256 value,
+    bytes calldata data
+  ) external returns (uint256) {
+    require(token.balanceOf(msg.sender) > 0, 'no voting power');
 
         proposalCount++;
         proposals[proposalCount] = Proposal({
@@ -47,23 +47,23 @@ contract Governance {
             againstVotes: 0
         });
 
-        return proposalCount;
-    }
+    return proposalCount;
+  }
 
-    function vote(uint256 proposalId, bool support) external {
-        Proposal storage p = proposals[proposalId];
-        require(block.number <= p.endBlock, "voting ended");
-        require(!hasVoted[proposalId][msg.sender], "already voted");
+  function vote(uint256 proposalId, bool support) external {
+    Proposal storage p = proposals[proposalId];
+    require(block.number <= p.endBlock, 'voting ended');
+    require(!hasVoted[proposalId][msg.sender], 'already voted');
 
         uint256 votes = token.getPastVotes(msg.sender, p.snapshotBlock);
 
         require(votes > 0, "no votes");
 
-        hasVoted[proposalId][msg.sender] = true;
+    hasVoted[proposalId][msg.sender] = true;
 
-        if (support) p.forVotes += votes;
-        else p.againstVotes += votes;
-    }
+    if (support) p.forVotes += votes;
+    else p.againstVotes += votes;
+  }
 
     function executeProposal(uint256 proposalId) external {
         Proposal storage p = proposals[proposalId];
