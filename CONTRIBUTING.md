@@ -22,7 +22,6 @@ This project follows standard open-source and DeFi engineering practices.
 - `issue-3-snapshot-voting`
 - `issue-10-governance-tests`
 
-
 ---
 
 ## Commit Message Guidelines
@@ -53,4 +52,3 @@ If you discover a security issue, **do not open a public issue**.
 Instead, contact the maintainers privately.
 
 ---
-
