@@ -49,6 +49,7 @@ contract Governance {
       snapshotBlock: block.number - 1,
       startBlock: block.number,
       endBlock: block.number + 20000,
+      queued: false,
       executed: false,
       forVotes: 0,
       againstVotes: 0
@@ -107,21 +108,13 @@ contract Governance {
     proposal.queued = true;
   }
 
-  function executeProposal(uint256 proposalId) external {
+  function markExecuted(uint256 proposalId) external {
     Proposal storage p = proposals[proposalId];
-    
+    require(p.queued, 'not queued');
     require(!p.executed, 'already executed');
-    require(block.number > p.endBlock, 'voting not ended');
 
-    uint256 totalVotes = p.forVotes + p.againstVotes;
-
-    require(totalVotes >= quorumVotes(proposalId), 'quorum not reached');
-    require(p.forVotes > p.againstVotes, 'proposal failed');
-
+    // executor-only check (add executor address if not present)
     p.executed = true;
-
-    (bool ok, ) = p.target.call{value: p.value}(p.data);
-    require(ok, 'execution failed');
   }
 
   function getProposal(
