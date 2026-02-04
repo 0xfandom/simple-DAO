@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {DAOToken} from "../token/DAOToken.sol";
-import {DAOTimelock} from "./Timelock.sol";
+import {DAOToken} from '../token/DAOToken.sol';
+import {DAOTimelock} from './Timelock.sol';
 
 contract Governance {
   struct Proposal {
@@ -12,6 +12,7 @@ contract Governance {
     uint256 snapshotBlock;
     uint256 startBlock;
     uint256 endBlock;
+    bool queued;
     bool executed;
     uint256 forVotes;
     uint256 againstVotes;
@@ -22,16 +23,16 @@ contract Governance {
   mapping(uint256 => Proposal) private proposals;
   mapping(uint256 => mapping(address => bool)) public hasVoted;
 
-    uint256 public constant VOTING_PERIOD = 5 days;
-    uint256 public quorumBps; // e.g. 1000 = 10%
-    DAOTimelock public timelock;
+  uint256 public constant VOTING_PERIOD = 5 days;
+  uint256 public quorumBps; // e.g. 1000 = 10%
+  DAOTimelock public timelock;
 
-    constructor(address _token, uint256 _quorumBps, DAOTimelock _timelock) {
-        require(_quorumBps > 0 && _quorumBps <= 10_000, "invalid quorum");
-        token = DAOToken(_token);
-        quorumBps = _quorumBps;
-        timelock = _timelock;
-    }
+  constructor(address _token, uint256 _quorumBps, DAOTimelock _timelock) {
+    require(_quorumBps > 0 && _quorumBps <= 10_000, 'invalid quorum');
+    token = DAOToken(_token);
+    quorumBps = _quorumBps;
+    timelock = _timelock;
+  }
 
   function propose(
     address target,
@@ -71,9 +72,44 @@ contract Governance {
     else p.againstVotes += votes;
   }
 
+  function queueProposal(uint256 proposalId) external {
+    Proposal storage proposal = proposals[proposalId];
+
+    require(block.number > proposal.endBlock, 'voting not ended');
+    require(!proposal.queued, 'already queued');
+    require(!proposal.executed, 'already executed');
+
+    uint256 totalVotes = proposal.forVotes + proposal.againstVotes;
+
+    require(totalVotes >= quorumVotes(proposalId), 'quorum not reached');
+
+    require(proposal.forVotes > proposal.againstVotes, 'proposal failed');
+
+    bytes32 salt = keccak256(abi.encode(proposalId));
+
+    bytes32 operationId = timelock.hashOperation(
+      proposal.target,
+      proposal.value,
+      proposal.data,
+      bytes32(0),
+      salt
+    );
+
+    timelock.schedule(
+      proposal.target,
+      proposal.value,
+      proposal.data,
+      bytes32(0),
+      salt,
+      timelock.getMinDelay()
+    );
+
+    proposal.queued = true;
+  }
+
   function executeProposal(uint256 proposalId) external {
     Proposal storage p = proposals[proposalId];
-
+    
     require(!p.executed, 'already executed');
     require(block.number > p.endBlock, 'voting not ended');
 
