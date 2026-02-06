@@ -10,16 +10,16 @@ contract Treasury is ReentrancyGuard {
     // executor is typically the Timelock contract
     address public executor;
 
-    constructor(address _executor) {
-        executor = _executor;
-    }
+  constructor(address _executor) {
+    executor = _executor;
+  }
 
-    modifier onlyExecutor() {
-        require(msg.sender == executor, "not executor");
-        _;
-    }
+  modifier onlyExecutor() {
+    require(msg.sender == executor, 'not executor');
+    _;
+  }
 
-    receive() external payable {}
+  receive() external payable {}
 
     function transferETH(
         address to,
