@@ -12,3 +12,13 @@ A minimal AnyDAO-inspired governance protocol.
 ## Status
 
 ⚠️ Early development — not audited
+
+### Treasury Assets
+
+The DAO treasury can hold:
+- ETH
+- Any ERC20 token
+
+All transfers must be executed through governance proposals
+and are subject to quorum and timelock delays.
+
