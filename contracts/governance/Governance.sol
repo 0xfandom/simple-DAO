@@ -28,6 +28,23 @@ contract Governance {
     DAOTimelock public timelock;
     uint256 public proposalThresholdBps;
 
+    event ProposalCreated(
+        uint256 indexed proposalId,
+        address indexed proposer,
+        address indexed target,
+        uint256 value,
+        uint256 startBlock,
+        uint256 endBlock,
+        uint256 snapshotBlock
+    );
+
+    event VoteCast(
+        address indexed voter,
+        uint256 indexed proposalId,
+        bool support,
+        uint256 votes
+    );
+
     constructor(
         address _token,
         uint256 _quorumBps,
@@ -72,8 +89,18 @@ contract Governance {
             againstVotes: 0
         });
 
-    return proposalCount;
-  }
+        emit ProposalCreated(
+            proposalCount,
+            msg.sender,
+            target,
+            value,
+            block.number,
+            block.number + 20000,
+            snapshotBlock
+        );
+
+        return proposalCount;
+    }
 
   function vote(uint256 proposalId, bool support) external {
     Proposal storage p = proposals[proposalId];
@@ -86,9 +113,11 @@ contract Governance {
 
     hasVoted[proposalId][msg.sender] = true;
 
-    if (support) p.forVotes += votes;
-    else p.againstVotes += votes;
-  }
+        if (support) p.forVotes += votes;
+        else p.againstVotes += votes;
+
+        emit VoteCast(msg.sender, proposalId, support, votes);
+    }
 
   function queueProposal(uint256 proposalId) external {
     Proposal storage proposal = proposals[proposalId];
