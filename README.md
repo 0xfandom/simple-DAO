@@ -22,3 +22,9 @@ The DAO treasury can hold:
 All transfers must be executed through governance proposals
 and are subject to quorum and timelock delays.
 
+### Proposal Threshold
+
+To prevent spam proposals, proposers must hold at least a
+configurable percentage of total voting power at snapshot time.
+
+
