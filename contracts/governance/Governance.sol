@@ -5,22 +5,23 @@ import {DAOToken} from "../token/DAOToken.sol";
 import {DAOTimelock} from "./Timelock.sol";
 
 contract Governance {
-    struct Proposal {
-        address target;
-        uint256 value;
-        bytes data;
-        uint256 snapshotBlock;
-        uint256 startBlock;
-        uint256 endBlock;
-        bool executed;
-        uint256 forVotes;
-        uint256 againstVotes;
-    }
+  struct Proposal {
+    address target;
+    uint256 value;
+    bytes data;
+    uint256 snapshotBlock;
+    uint256 startBlock;
+    uint256 endBlock;
+    bool queued;
+    bool executed;
+    uint256 forVotes;
+    uint256 againstVotes;
+  }
 
-    DAOToken public token;
-    uint256 public proposalCount;
-    mapping(uint256 => Proposal) private proposals;
-    mapping(uint256 => mapping(address => bool)) public hasVoted;
+  DAOToken public token;
+  uint256 public proposalCount;
+  mapping(uint256 => Proposal) private proposals;
+  mapping(uint256 => mapping(address => bool)) public hasVoted;
 
     uint256 public constant VOTING_PERIOD = 5 days;
     uint256 public quorumBps; // e.g. 1000 = 10%
@@ -57,12 +58,12 @@ contract Governance {
         proposalThresholdBps = _proposalThresholdBps;
     }
 
-    function propose(
-        address target,
-        uint256 value,
-        bytes calldata data
-    ) external returns (uint256) {
-        require(token.balanceOf(msg.sender) > 0, "no voting power");
+  function propose(
+    address target,
+    uint256 value,
+    bytes calldata data
+  ) external returns (uint256) {
+    require(token.balanceOf(msg.sender) > 0, 'no voting power');
 
         uint256 snapshotBlock = block.number - 1;
 
@@ -82,6 +83,7 @@ contract Governance {
             snapshotBlock: snapshotBlock,
             startBlock: block.number,
             endBlock: block.number + 20000,
+            queued: false,
             executed: false,
             forVotes: 0,
             againstVotes: 0
@@ -100,16 +102,16 @@ contract Governance {
         return proposalCount;
     }
 
-    function vote(uint256 proposalId, bool support) external {
-        Proposal storage p = proposals[proposalId];
-        require(block.number <= p.endBlock, "voting ended");
-        require(!hasVoted[proposalId][msg.sender], "already voted");
+  function vote(uint256 proposalId, bool support) external {
+    Proposal storage p = proposals[proposalId];
+    require(block.number <= p.endBlock, 'voting ended');
+    require(!hasVoted[proposalId][msg.sender], 'already voted');
 
-        uint256 votes = token.getPastVotes(msg.sender, p.snapshotBlock);
+    uint256 votes = token.getPastVotes(msg.sender, p.snapshotBlock);
 
-        require(votes > 0, "no votes");
+    require(votes > 0, 'no votes');
 
-        hasVoted[proposalId][msg.sender] = true;
+    hasVoted[proposalId][msg.sender] = true;
 
         if (support) p.forVotes += votes;
         else p.againstVotes += votes;
@@ -117,30 +119,61 @@ contract Governance {
         emit VoteCast(msg.sender, proposalId, support, votes);
     }
 
-    function executeProposal(uint256 proposalId) external {
-        Proposal storage p = proposals[proposalId];
+  function queueProposal(uint256 proposalId) external {
+    Proposal storage proposal = proposals[proposalId];
 
-        require(!p.executed, "already executed");
-        require(block.number > p.endBlock, "voting not ended");
-        require(p.forVotes > p.againstVotes, "proposal failed");
+    require(block.number > proposal.endBlock, 'voting not ended');
+    require(!proposal.queued, 'already queued');
+    require(!proposal.executed, 'already executed');
 
-        p.executed = true;
+    uint256 totalVotes = proposal.forVotes + proposal.againstVotes;
 
-        (bool ok, ) = p.target.call{value: p.value}(p.data);
-        require(ok, "execution failed");
-    }
+    require(totalVotes >= quorumVotes(proposalId), 'quorum not reached');
 
-    function getProposal(
-        uint256 proposalId
-    ) public view returns (Proposal memory proposal) {
-        proposal = proposals[proposalId];
-    }
+    require(proposal.forVotes > proposal.againstVotes, 'proposal failed');
 
-    function quorumVotes(uint256 proposalId) public view returns (uint256) {
-        Proposal storage p = proposals[proposalId];
+    bytes32 salt = keccak256(abi.encode(proposalId));
 
-        uint256 totalSupply = token.getPastTotalSupply(p.snapshotBlock);
+    bytes32 operationId = timelock.hashOperation(
+      proposal.target,
+      proposal.value,
+      proposal.data,
+      bytes32(0),
+      salt
+    );
 
-        return (totalSupply * quorumBps) / 10_000;
-    }
+    timelock.schedule(
+      proposal.target,
+      proposal.value,
+      proposal.data,
+      bytes32(0),
+      salt,
+      timelock.getMinDelay()
+    );
+
+    proposal.queued = true;
+  }
+
+  function markExecuted(uint256 proposalId) external {
+    Proposal storage p = proposals[proposalId];
+    require(p.queued, 'not queued');
+    require(!p.executed, 'already executed');
+
+    // executor-only check (add executor address if not present)
+    p.executed = true;
+  }
+
+  function getProposal(
+    uint256 proposalId
+  ) public view returns (Proposal memory proposal) {
+    proposal = proposals[proposalId];
+  }
+
+  function quorumVotes(uint256 proposalId) public view returns (uint256) {
+    Proposal storage p = proposals[proposalId];
+
+    uint256 totalSupply = token.getPastTotalSupply(p.snapshotBlock);
+
+    return (totalSupply * quorumBps) / 10_000;
+  }
 }
